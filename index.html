@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gates FEAD Advanced Engineering Suite</title>
+  <meta name="description" content="Advanced belt drive engineering calculations: hub load, belt slip, fatigue life, water pump bearing life, frictional power, duty cycle analysis and A4 PDF export."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="index.css"/>
+</head>
+<body>
+
+<!-- ── Header ─────────────────────────────────────────────────────────── -->
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <svg class="brand-icon" viewBox="0 0 52 52" fill="none">
+        <circle cx="26" cy="26" r="23" stroke="#f59e0b" stroke-width="2.5"/>
+        <circle cx="26" cy="26" r="14" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="5 3"/>
+        <circle cx="26" cy="26" r="5" fill="#f59e0b"/>
+        <path d="M26 6L26 3M26 49L26 46M6 26L3 26M49 26L46 26M10.7 10.7L8.6 8.6M43.3 43.3L41.2 41.2M41.2 10.8L43.3 8.7M8.8 43.2L10.7 41.3" stroke="#8b5cf6" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <h1>Gates FEAD Advanced Engineering Suite</h1>
+        <p class="subtitle">Ashok Leyland H6 · Belt Drive Analysis · Slip · Fatigue · Bearing Life · Friction</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge" id="live-status">● COMPUTING</div>
+      <a href="http://localhost:8080" class="back-link" target="_blank">← Hub Load Calculator</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <!-- ── TOP ROW: Layout Editor + Drive Parameters ──────────────────── -->
+  <div class="row row-top">
+
+    <!-- 2D Layout Editor -->
+    <section class="card card-canvas" id="section-layout">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">⬡</span>
+          <h2 class="card-title">2D Layout Editor</h2>
+        </div>
+        <div class="canvas-header-right">
+          <span class="canvas-hint">Drag any pulley to reposition · Force arrows update live</span>
+          <button id="btn-reset-layout" class="btn btn-sm">↺ Reset Layout</button>
+        </div>
+      </div>
+      <div class="canvas-wrap" style="position:relative">
+        <canvas id="canvas2d" class="live-canvas"></canvas>
+        <div id="pulley-tooltip" class="pulley-tooltip" style="display:none"></div>
+      </div>
+      <div class="canvas-legend">
+        <span class="leg-item" style="--c:#f59e0b">▬ Belt spans</span>
+        <span class="leg-item" style="--c:#ef4444">→ Hub-load force</span>
+        <span class="leg-item" style="--c:#f59e0b">● CRK</span>
+        <span class="leg-item" style="--c:#8b5cf6">● FAN</span>
+        <span class="leg-item" style="--c:#a78bfa">● IDR</span>
+        <span class="leg-item" style="--c:#34d399">● ALT</span>
+        <span class="leg-item" style="--c:#f472b6">● AC</span>
+        <span class="leg-item" style="--c:#60a5fa">● TEN</span>
+      </div>
+    </section>
+
+    <!-- Coordinate Editor Panel -->
+    <section class="card card-coords" id="section-coords">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">📐</span>
+          <h2 class="card-title">Pulley Coordinates</h2>
+        </div>
+        <span class="card-sub">Edit X / Y / R to reposition</span>
+      </div>
+      <div class="coords-table-wrap">
+        <table class="coords-table" id="coords-table">
+          <thead>
+            <tr><th>Pulley</th><th>X (mm)</th><th>Y (mm)</th><th>R (mm)</th></tr>
+          </thead>
+          <tbody id="coords-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ── DRIVE PARAMETERS ROW ──────────────────────────────────────────── -->
+  <div class="row row-params">
+    <section class="card card-params" id="section-params">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">⚙</span>
+          <h2 class="card-title">Drive Parameters</h2>
+        </div>
+        <span class="card-sub">Adjust RPM, tension, tensioner position and per-accessory power</span>
+      </div>
+      <div class="params-body">
+
+        <!-- Main sliders -->
+        <div class="sliders-row">
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <label for="adv-rpm">Engine Speed</label>
+              <span class="ctrl-val" id="lbl-adv-rpm">1200 RPM</span>
+            </div>
+            <input type="range" id="adv-rpm" min="300" max="2600" step="10" value="1200" class="slider"/>
+            <div class="slider-marks"><span>300</span><span>1000</span><span>1600</span><span>2600</span></div>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <label for="adv-tension">Static Belt Tension</label>
+              <span class="ctrl-val" id="lbl-adv-tension">2500 N</span>
+            </div>
+            <input type="range" id="adv-tension" min="200" max="5000" step="10" value="2500" class="slider"/>
+            <div class="slider-marks"><span>200 N</span><span>480 N design</span><span>5000 N</span></div>
+          </div>
+          <div class="ctrl-group">
+            <div class="ctrl-header">
+              <label for="adv-tensioner">Tensioner Position</label>
+              <span class="ctrl-val" id="lbl-adv-tensioner">MEAN (15.4°)</span>
+            </div>
+            <input type="range" id="adv-tensioner" min="0" max="5" step="1" value="3" class="slider"/>
+            <div class="slider-marks"><span>FREE</span><span>REPLACE</span><span>MAX</span><span>MEAN</span><span>MIN</span><span>LOAD</span></div>
+          </div>
+        </div>
+
+        <!-- Power override inputs -->
+        <div class="power-inputs-wrap">
+          <div class="power-inputs-title">Per-Accessory Power Override <span class="power-inputs-sub">(kW — leave blank to use load table)</span></div>
+          <div class="power-inputs-grid" id="power-inputs-grid"></div>
+        </div>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- ── OPERATING CONDITIONS + DUTY CYCLE ROW ─────────────────────────── -->
+  <div class="row row-conditions">
+
+    <!-- Operating Conditions Checkboxes -->
+    <section class="card card-conditions" id="section-conditions">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">☑</span>
+          <h2 class="card-title">Operating Conditions</h2>
+        </div>
+        <span class="card-sub">Toggle real-world conditions — all calculations update live</span>
+      </div>
+      <div class="conditions-grid" id="conditions-grid"></div>
+      <div class="conditions-summary" id="conditions-summary"></div>
+    </section>
+
+    <!-- Duty Cycle Weights -->
+    <section class="card card-duty" id="section-duty">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">📊</span>
+          <h2 class="card-title">Duty Cycle Weights</h2>
+        </div>
+        <span class="card-sub">Used for fatigue life &amp; weighted bearing load</span>
+      </div>
+      <div class="duty-body">
+        <div class="duty-group">
+          <div class="duty-label-row">
+            <span class="duty-cycle-label">WLTC Low Phase</span>
+            <span class="duty-val" id="lbl-dc-wltcLow">25%</span>
+          </div>
+          <input type="range" id="dc-wltcLow" min="0" max="100" step="1" value="25" class="slider slider-amber"/>
+        </div>
+        <div class="duty-group">
+          <div class="duty-label-row">
+            <span class="duty-cycle-label">WLTC Medium Phase</span>
+            <span class="duty-val" id="lbl-dc-wltcMed">25%</span>
+          </div>
+          <input type="range" id="dc-wltcMed" min="0" max="100" step="1" value="25" class="slider slider-amber"/>
+        </div>
+        <div class="duty-group">
+          <div class="duty-label-row">
+            <span class="duty-cycle-label">WLTC High Phase</span>
+            <span class="duty-val" id="lbl-dc-wltcHigh">25%</span>
+          </div>
+          <input type="range" id="dc-wltcHigh" min="0" max="100" step="1" value="25" class="slider slider-amber"/>
+        </div>
+        <div class="duty-group">
+          <div class="duty-label-row">
+            <span class="duty-cycle-label">WLTC Extra-High Phase</span>
+            <span class="duty-val" id="lbl-dc-wltcXHigh">25%</span>
+          </div>
+          <input type="range" id="dc-wltcXHigh" min="0" max="100" step="1" value="25" class="slider slider-amber"/>
+        </div>
+        <div class="duty-total" id="duty-total">Total: 100%</div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ── POWER vs RPM GRAPH EDITOR ─────────────────────────────────────── -->
+  <div class="row row-power-graph">
+    <section class="card card-power-graph" id="section-power-graph">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">📈</span>
+          <h2 class="card-title">Power vs Engine RPM — Graph Editor</h2>
+        </div>
+        <span class="card-sub">Edit table cells to customize power curves · Chart updates live</span>
+      </div>
+      <div class="power-graph-body">
+        <div class="power-graph-wrap">
+          <canvas id="power-graph-chart"></canvas>
+        </div>
+        <div class="power-table-wrap" id="power-table-wrap"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ── RESULTS: 6 TABS ──────────────────────────────────────────────── -->
+  <div class="row row-results">
+    <section class="card card-results" id="section-results">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">≡</span>
+          <h2 class="card-title">Engineering Calculations</h2>
+        </div>
+        <div class="results-tab-row" id="results-tab-row">
+          <button class="res-tab active" data-tab="hubload">🔩 Hub Load</button>
+          <button class="res-tab" data-tab="tension">⚡ Belt Tension</button>
+          <button class="res-tab" data-tab="slip">⚠ Belt Slip</button>
+          <button class="res-tab" data-tab="fatigue">🔄 Fatigue Life</button>
+          <button class="res-tab" data-tab="bearing">🔧 WP Bearing Life</button>
+          <button class="res-tab" data-tab="friction">🌡 Friction ΔP</button>
+        </div>
+      </div>
+
+      <!-- Tab: Hub Load -->
+      <div class="res-panel active" id="res-panel-hubload">
+        <div class="tab-intro">Hub bearing force at each pulley. Computed from tangent geometry and span tensions.</div>
+        <div class="res-table-wrap" id="hubload-table"></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">F<sub>x</sub> = T<sub>in</sub>·cos θ<sub>in</sub> + T<sub>out</sub>·cos θ<sub>out</sub></span></div>
+          <div class="fml"><span class="fml-eq">F<sub>hub</sub> = √(F<sub>x</sub>² + F<sub>y</sub>²)</span></div>
+          <div class="fml"><span class="fml-eq">θ<sub>hub</sub> = atan2(F<sub>y</sub>, F<sub>x</sub>) × 180/π</span></div>
+        </div>
+      </div>
+
+      <!-- Tab: Belt Tension -->
+      <div class="res-panel" id="res-panel-tension">
+        <div class="tab-intro">Tight-side, slack-side, centrifugal and total dynamic tensions per span.</div>
+        <div class="res-table-wrap" id="tension-table"></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">T<sub>c</sub> = m<sub>b</sub> · v²</span><span class="fml-note">m<sub>b</sub>=0.18 kg/m · 8-rib Aramid</span></div>
+          <div class="fml"><span class="fml-eq">T<sub>tight</sub> = T<sub>static</sub> + T<sub>eff</sub>/2</span></div>
+          <div class="fml"><span class="fml-eq">T<sub>slack</sub> = T<sub>static</sub> − T<sub>eff</sub>/2</span></div>
+          <div class="fml"><span class="fml-eq">T<sub>total</sub> = T<sub>tight</sub> + T<sub>c</sub></span></div>
+        </div>
+      </div>
+
+      <!-- Tab: Belt Slip -->
+      <div class="res-panel" id="res-panel-slip">
+        <div class="tab-intro">Capstan equation slip safety factor per pulley. SF &lt; 1 = belt slipping.</div>
+        <div class="res-table-wrap" id="slip-table"></div>
+        <div class="slip-chart-wrap"><canvas id="slip-chart"></canvas></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">T<sub>tight</sub>/T<sub>slack</sub> ≤ e<sup>μθ</sup></span><span class="fml-note">μ=0.35 rubber-on-steel</span></div>
+          <div class="fml"><span class="fml-eq">SF = ln(T<sub>tight</sub>/T<sub>slack</sub>) / (μ·θ)</span><span class="fml-note">SF &gt; 1.3 → safe zone</span></div>
+        </div>
+      </div>
+
+      <!-- Tab: Fatigue Life -->
+      <div class="res-panel" id="res-panel-fatigue">
+        <div class="tab-intro">Wöhler fatigue model with Palmgren-Miner damage accumulation per duty-cycle weights.</div>
+        <div class="res-table-wrap" id="fatigue-table"></div>
+        <div class="fatigue-summary" id="fatigue-summary"></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">N<sub>f</sub> = N<sub>ref</sub> · (T<sub>ref</sub>/T<sub>tight</sub>)<sup>m</sup></span><span class="fml-note">m=10, N<sub>ref</sub>=10<sup>8</sup>, T<sub>ref</sub>=1200 N</span></div>
+          <div class="fml"><span class="fml-eq">D = Σ(w<sub>i</sub> / N<sub>fi</sub>)</span><span class="fml-note">Palmgren-Miner rule</span></div>
+          <div class="fml"><span class="fml-eq">Life = L<sub>belt</sub> / D</span><span class="fml-note">L<sub>belt</sub>=1.577 m</span></div>
+        </div>
+      </div>
+
+      <!-- Tab: WP Bearing Life -->
+      <div class="res-panel" id="res-panel-bearing">
+        <div class="tab-intro">ISO 281 L10 bearing life for water pump shaft bearings (C&amp;U data). WP driven at 1.35× engine RPM via geartrain.</div>
+        <div class="bearing-cards" id="bearing-cards"></div>
+        <div class="bearing-chart-wrap"><canvas id="bearing-chart"></canvas></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">L<sub>10</sub> = (C/P)<sup>p</sup> × 10<sup>6</sup>/(60·n)</span><span class="fml-note">Ball: p=3 · Roller: p=10/3</span></div>
+          <div class="fml"><span class="fml-eq">L<sub>10,composite</sub> = [Σ(L<sub>10,i</sub><sup>−9/8</sup>)]<sup>−8/9</sup></span></div>
+        </div>
+      </div>
+
+      <!-- Tab: Frictional Power -->
+      <div class="res-panel" id="res-panel-friction">
+        <div class="tab-intro">Extra frictional power from engaging the A/C compressor vs non-AC baseline.</div>
+        <div class="friction-controls">
+          <label for="ac-power-slider">A/C Compressor Power:</label>
+          <input type="range" id="ac-power-slider" min="0.5" max="7" step="0.1" value="2.1" class="slider slider-pink"/>
+          <span id="lbl-ac-power" class="ctrl-val">2.1 kW</span>
+        </div>
+        <div class="friction-kpi-row" id="friction-kpi-row"></div>
+        <div class="res-table-wrap" id="friction-table"></div>
+        <div class="friction-bar-wrap" id="friction-bar-wrap"></div>
+        <div class="formula-strip">
+          <div class="fml"><span class="fml-eq">ΔT<sub>span</sub> = ΔP<sub>AC</sub> / v<sub>belt</sub></span></div>
+          <div class="fml"><span class="fml-eq">ΔP<sub>fric</sub> = μ<sub>b</sub> · ΔF<sub>hub</sub> · ω · R</span><span class="fml-note">μ<sub>b</sub>=0.002</span></div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ── CHARTS ROW: SF vs RPM + L10 vs RPM ─────────────────────────── -->
+  <div class="row row-charts">
+    <section class="card card-sfchart">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">📉</span>
+          <h2 class="card-title">Slip Safety Factor vs RPM</h2>
+        </div>
+        <span class="card-sub">All 6 pulleys · Red zone = slip risk</span>
+      </div>
+      <div class="chart-wrap"><canvas id="sf-vs-rpm-chart"></canvas></div>
+    </section>
+    <section class="card card-l10chart">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">🔧</span>
+          <h2 class="card-title">WP Bearing L10 Life vs RPM</h2>
+        </div>
+        <span class="card-sub">Ball + Roller + Composite · C&amp;U reference lines</span>
+      </div>
+      <div class="chart-wrap"><canvas id="l10-vs-rpm-chart"></canvas></div>
+    </section>
+  </div>
+
+  <!-- ── PDF EXPORT ─────────────────────────────────────────────────── -->
+  <div class="row row-export">
+    <section class="card card-export" id="section-export">
+      <div class="card-header">
+        <div class="card-title-group">
+          <span class="card-icon">📄</span>
+          <h2 class="card-title">Export Engineering Report</h2>
+        </div>
+        <span class="card-sub">Downloads an A4 PDF with 2D belt diagram + all calculation tables</span>
+      </div>
+      <div class="export-body">
+        <div class="export-preview-info">
+          <div class="export-info-block">
+            <div class="export-info-title">Report will include:</div>
+            <ul class="export-list">
+              <li>🗺 2D Belt Layout Diagram (from canvas)</li>
+              <li>🔩 Hub Load table — all 6 pulleys, F, direction, ΔF vs PDF</li>
+              <li>⚡ Belt Tension table — tight, slack, centrifugal per span</li>
+              <li>⚠ Belt Slip Safety table — SF, wrap angle, capstan ratio</li>
+              <li>🔄 Belt Fatigue Life — Wöhler + Miner damage, life in km</li>
+              <li>🔧 WP Bearing Life — L10A, L10B, composite vs C&U reference</li>
+              <li>🌡 Frictional Power — non-AC vs AC delta breakdown</li>
+              <li>📐 Operating conditions &amp; duty cycle weights used</li>
+              <li>📖 Physics formulas reference</li>
+            </ul>
+          </div>
+          <div class="export-meta-block">
+            <div class="export-meta-title">Report Metadata</div>
+            <div class="export-meta-field">
+              <label for="report-title">Report Title</label>
+              <input type="text" id="report-title" value="Gates FEAD Engineering Analysis" class="meta-input"/>
+            </div>
+            <div class="export-meta-field">
+              <label for="report-author">Author / Engineer</label>
+              <input type="text" id="report-author" value="" placeholder="Your name" class="meta-input"/>
+            </div>
+            <div class="export-meta-field">
+              <label for="report-project">Project Reference</label>
+              <input type="text" id="report-project" value="Ashok Leyland H6 · Belt MT620 AMD" class="meta-input"/>
+            </div>
+          </div>
+        </div>
+        <div class="export-btn-row">
+          <button id="btn-download-pdf" class="btn btn-export">
+            <span class="btn-export-icon">⬇</span>
+            Download A4 Engineering Report (PDF)
+          </button>
+          <button id="btn-download-excel" class="btn btn-export btn-export-excel">
+            <span class="btn-export-icon">📊</span>
+            Export All Tables (.xlsx)
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <span>Gates FEAD Advanced Engineering Suite · Ashok Leyland H6 · ISO 281 / Wöhler / Capstan physics</span>
+    <span class="footer-right">
+      <a href="http://localhost:8080" target="_blank">← Back to Hub Load Calculator</a>
+    </span>
+  </div>
+</footer>
+
+<!-- ── Dependencies ───────────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="physics.js"></script>
+<script src="app.js"></script>
+
+</body>
+</html>
