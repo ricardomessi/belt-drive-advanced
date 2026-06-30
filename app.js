@@ -175,22 +175,65 @@ function draw2D() {
     ctx2d.beginPath(); ctx2d.moveTo(PAD/2, ty(gy)); ctx2d.lineTo(W-PAD/2, ty(gy)); ctx2d.stroke();
   }
 
-  // ── Belt spans — straight tangent lines along pulley borders ─────────────
+  // ── Belt path — tangent lines + boundary arcs along every pulley ─────────
   const hl = RESULTS.hubLoad;
   const avgF = hl ? Object.values(hl.results).reduce((s,d)=>s+d.F,0)/6 : 0;
   const bw = Math.max(2, Math.min(6, 2 + avgF/900));
+
   ctx2d.save();
   ctx2d.shadowColor = '#f59e0b'; ctx2d.shadowBlur = 8;
   ctx2d.strokeStyle = '#f59e0b'; ctx2d.lineWidth = bw;
   ctx2d.setLineDash([13,8]); ctx2d.lineDashOffset = dashOffset;
+
   if (hl) {
-    for (const n of PH_ORDER) {
-      const s = hl.spans[n]; if (!s) continue;
-      ctx2d.beginPath();
-      ctx2d.moveTo(tx(s.t1.x), ty(s.t1.y));
-      ctx2d.lineTo(tx(s.t2.x), ty(s.t2.y));
-      ctx2d.stroke();
+    const centX2 = PH_ORDER.reduce((s,n) => s + ST.pulleys[n].x, 0) / PH_ORDER.length;
+    const centY2 = PH_ORDER.reduce((s,n) => s + ST.pulleys[n].y, 0) / PH_ORDER.length;
+
+    ctx2d.beginPath();
+    let started2 = false;
+
+    for (let i = 0; i < PH_ORDER.length; i++) {
+      const n    = PH_ORDER[i];
+      const prev = PH_ORDER[(i - 1 + PH_ORDER.length) % PH_ORDER.length];
+      const p    = ST.pulleys[n];
+      const sIn  = hl.spans[prev];
+      const sOut = hl.spans[n];
+      if (!sIn || !sOut) continue;
+
+      const aIn  = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
+      const aOut = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
+
+      function arcMid2(a1, a2, ccw) {
+        let sw = ccw ? (a2 - a1) : (a1 - a2);
+        if (sw < 0) sw += 2 * Math.PI;
+        const mid = ccw ? (a1 + sw / 2) : (a1 - sw / 2);
+        return { x: p.x + p.r * Math.cos(mid), y: p.y + p.r * Math.sin(mid) };
+      }
+      const mCCW = arcMid2(aIn, aOut, true);
+      const mCW  = arcMid2(aIn, aOut, false);
+      const dCCW = Math.hypot(mCCW.x - centX2, mCCW.y - centY2);
+      const dCW  = Math.hypot(mCW.x  - centX2, mCW.y  - centY2);
+      const goCCW = dCCW >= dCW;
+
+      const SEGS = 16;
+      let sweep = goCCW ? (aOut - aIn) : (aIn - aOut);
+      if (sweep < 0) sweep += 2 * Math.PI;
+
+      if (!started2) {
+        ctx2d.moveTo(tx(p.x + p.r * Math.cos(aIn)), ty(p.y + p.r * Math.sin(aIn)));
+        started2 = true;
+      }
+
+      for (let s = 1; s <= SEGS; s++) {
+        const frac = s / SEGS;
+        const a = goCCW ? (aIn + sweep * frac) : (aIn - sweep * frac);
+        ctx2d.lineTo(tx(p.x + p.r * Math.cos(a)), ty(p.y + p.r * Math.sin(a)));
+      }
+
+      ctx2d.lineTo(tx(sOut.t2.x), ty(sOut.t2.y));
     }
+    ctx2d.closePath();
+    ctx2d.stroke();
   }
   ctx2d.restore();
 
