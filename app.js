@@ -1,4 +1,4 @@
-﻿/* app.js – FEAD Advanced Engineering Suite – UI Engine */
+/* app.js – FEAD Advanced Engineering Suite – UI Engine */
 'use strict';
 
 // ── Global State ──────────────────────────────────────────────────────────────
@@ -183,6 +183,7 @@ function draw2D() {
   function beltArcs2() {
     const arcs = {};
     if (!hl) return arcs;
+    const TWO_PI = 2 * Math.PI;
     for (let i = 0; i < PH_ORDER.length; i++) {
       const n    = PH_ORDER[i];
       const prev = PH_ORDER[(i - 1 + PH_ORDER.length) % PH_ORDER.length];
@@ -192,7 +193,17 @@ function draw2D() {
       if (!sIn || !sOut) continue;
       const startAngle = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
       const endAngle   = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
-      arcs[n] = { cx:p.x, cy:p.y, r:p.r, startAngle, endAngle, ccw:!p.cw };
+
+      // Compute CCW and CW sweep angles (always 0..2π)
+      let sweepCCW = endAngle - startAngle;
+      if (sweepCCW < 0) sweepCCW += TWO_PI;
+      const sweepCW = TWO_PI - sweepCCW;
+
+      // outer span → shorter arc; inner span → longer arc (belt wraps further around)
+      const spanType = PH_SPAN_TYPES[n];
+      const ccw = spanType === 'outer' ? (sweepCCW <= sweepCW) : (sweepCCW >= sweepCW);
+
+      arcs[n] = { cx:p.x, cy:p.y, r:p.r, startAngle, endAngle, ccw };
     }
     return arcs;
   }
