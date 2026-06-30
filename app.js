@@ -226,8 +226,9 @@ function draw2D() {
                    ty(arc.cy + arc.r * Math.sin(arc.startAngle)));
       firstMove2 = false;
     }
+    // Negate angles: world coords have Y-up, canvas has Y-down.
     ctx2d.arc(tx(arc.cx), ty(arc.cy), arc.r * sc,
-              arc.startAngle, arc.endAngle, arc.ccw);
+              -arc.startAngle, -arc.endAngle, arc.ccw);
     ctx2d.lineTo(tx(sOut.t2.x), ty(sOut.t2.y));
   }
   ctx2d.closePath();
