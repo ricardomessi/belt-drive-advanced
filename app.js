@@ -175,64 +175,23 @@ function draw2D() {
     ctx2d.beginPath(); ctx2d.moveTo(PAD/2, ty(gy)); ctx2d.lineTo(W-PAD/2, ty(gy)); ctx2d.stroke();
   }
 
-  // ── Closed Belt Path — spans + arcs around every pulley ──────────────────
+  // ── Belt spans — straight tangent lines along pulley borders ─────────────
   const hl = RESULTS.hubLoad;
   const avgF = hl ? Object.values(hl.results).reduce((s,d)=>s+d.F,0)/6 : 0;
   const bw = Math.max(2, Math.min(6, 2 + avgF/900));
-
-  function beltArcs2() {
-    const arcs = {};
-    if (!hl) return arcs;
-    const TWO_PI = 2 * Math.PI;
-    for (let i = 0; i < PH_ORDER.length; i++) {
-      const n    = PH_ORDER[i];
-      const prev = PH_ORDER[(i - 1 + PH_ORDER.length) % PH_ORDER.length];
-      const p    = ST.pulleys[n];
-      const sIn  = hl.spans[prev];
-      const sOut = hl.spans[n];
-      if (!sIn || !sOut) continue;
-      const startAngle = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
-      const endAngle   = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
-
-      // Compute CCW and CW sweep angles (always 0..2π)
-      let sweepCCW = endAngle - startAngle;
-      if (sweepCCW < 0) sweepCCW += TWO_PI;
-      const sweepCW = TWO_PI - sweepCCW;
-
-      // outer span → shorter arc; inner span → longer arc (belt wraps further around)
-      const spanType = PH_SPAN_TYPES[n];
-      const ccw = spanType === 'outer' ? (sweepCCW <= sweepCW) : (sweepCCW >= sweepCW);
-
-      arcs[n] = { cx:p.x, cy:p.y, r:p.r, startAngle, endAngle, ccw };
-    }
-    return arcs;
-  }
-  const arcs2 = beltArcs2();
-
   ctx2d.save();
   ctx2d.shadowColor = '#f59e0b'; ctx2d.shadowBlur = 8;
   ctx2d.strokeStyle = '#f59e0b'; ctx2d.lineWidth = bw;
   ctx2d.setLineDash([13,8]); ctx2d.lineDashOffset = dashOffset;
-
-  ctx2d.beginPath();
-  let firstMove2 = true;
-  for (let i = 0; i < PH_ORDER.length; i++) {
-    const n    = PH_ORDER[i];
-    const sOut = hl ? hl.spans[n] : null;
-    const arc  = arcs2[n];
-    if (!sOut || !arc) continue;
-    if (firstMove2) {
-      ctx2d.moveTo(tx(arc.cx + arc.r * Math.cos(arc.startAngle)),
-                   ty(arc.cy + arc.r * Math.sin(arc.startAngle)));
-      firstMove2 = false;
+  if (hl) {
+    for (const n of PH_ORDER) {
+      const s = hl.spans[n]; if (!s) continue;
+      ctx2d.beginPath();
+      ctx2d.moveTo(tx(s.t1.x), ty(s.t1.y));
+      ctx2d.lineTo(tx(s.t2.x), ty(s.t2.y));
+      ctx2d.stroke();
     }
-    // Negate angles: world coords have Y-up, canvas has Y-down.
-    ctx2d.arc(tx(arc.cx), ty(arc.cy), arc.r * sc,
-              -arc.startAngle, -arc.endAngle, arc.ccw);
-    ctx2d.lineTo(tx(sOut.t2.x), ty(sOut.t2.y));
   }
-  ctx2d.closePath();
-  ctx2d.stroke();
   ctx2d.restore();
 
   // Pulleys
