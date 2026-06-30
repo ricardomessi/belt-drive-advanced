@@ -186,9 +186,6 @@ function draw2D() {
   ctx2d.setLineDash([13,8]); ctx2d.lineDashOffset = dashOffset;
 
   if (hl) {
-    const centX2 = PH_ORDER.reduce((s,n) => s + ST.pulleys[n].x, 0) / PH_ORDER.length;
-    const centY2 = PH_ORDER.reduce((s,n) => s + ST.pulleys[n].y, 0) / PH_ORDER.length;
-
     ctx2d.beginPath();
     let started2 = false;
 
@@ -203,21 +200,13 @@ function draw2D() {
       const aIn  = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
       const aOut = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
 
-      function arcMid2(a1, a2, ccw) {
-        let sw = ccw ? (a2 - a1) : (a1 - a2);
-        if (sw < 0) sw += 2 * Math.PI;
-        const mid = ccw ? (a1 + sw / 2) : (a1 - sw / 2);
-        return { x: p.x + p.r * Math.cos(mid), y: p.y + p.r * Math.sin(mid) };
-      }
-      const mCCW = arcMid2(aIn, aOut, true);
-      const mCW  = arcMid2(aIn, aOut, false);
-      const dCCW = Math.hypot(mCCW.x - centX2, mCCW.y - centY2);
-      const dCW  = Math.hypot(mCW.x  - centX2, mCW.y  - centY2);
-      const goCCW = dCCW >= dCW;
+      // Serpentine belt wrap is always < 180° — always take the shorter arc
+      let sweepCCW2 = aOut - aIn;
+      if (sweepCCW2 < 0) sweepCCW2 += 2 * Math.PI;
+      const goCCW = sweepCCW2 <= Math.PI;
 
       const SEGS = 16;
-      let sweep = goCCW ? (aOut - aIn) : (aIn - aOut);
-      if (sweep < 0) sweep += 2 * Math.PI;
+      let sweep = goCCW ? sweepCCW2 : (2 * Math.PI - sweepCCW2);
 
       if (!started2) {
         ctx2d.moveTo(tx(p.x + p.r * Math.cos(aIn)), ty(p.y + p.r * Math.sin(aIn)));
