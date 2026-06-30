@@ -175,23 +175,52 @@ function draw2D() {
     ctx2d.beginPath(); ctx2d.moveTo(PAD/2, ty(gy)); ctx2d.lineTo(W-PAD/2, ty(gy)); ctx2d.stroke();
   }
 
-  // Belt spans
+  // ── Closed Belt Path — spans + arcs around every pulley ──────────────────
   const hl = RESULTS.hubLoad;
   const avgF = hl ? Object.values(hl.results).reduce((s,d)=>s+d.F,0)/6 : 0;
   const bw = Math.max(2, Math.min(6, 2 + avgF/900));
+
+  function beltArcs2() {
+    const arcs = {};
+    if (!hl) return arcs;
+    for (let i = 0; i < PH_ORDER.length; i++) {
+      const n    = PH_ORDER[i];
+      const prev = PH_ORDER[(i - 1 + PH_ORDER.length) % PH_ORDER.length];
+      const p    = ST.pulleys[n];
+      const sIn  = hl.spans[prev];
+      const sOut = hl.spans[n];
+      if (!sIn || !sOut) continue;
+      const startAngle = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
+      const endAngle   = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
+      arcs[n] = { cx:p.x, cy:p.y, r:p.r, startAngle, endAngle, ccw:!p.cw };
+    }
+    return arcs;
+  }
+  const arcs2 = beltArcs2();
+
   ctx2d.save();
   ctx2d.shadowColor = '#f59e0b'; ctx2d.shadowBlur = 8;
   ctx2d.strokeStyle = '#f59e0b'; ctx2d.lineWidth = bw;
   ctx2d.setLineDash([13,8]); ctx2d.lineDashOffset = dashOffset;
-  if (hl) {
-    for (const n of PH_ORDER) {
-      const s = hl.spans[n]; if (!s) continue;
-      ctx2d.beginPath();
-      ctx2d.moveTo(tx(s.t1.x), ty(s.t1.y));
-      ctx2d.lineTo(tx(s.t2.x), ty(s.t2.y));
-      ctx2d.stroke();
+
+  ctx2d.beginPath();
+  let firstMove2 = true;
+  for (let i = 0; i < PH_ORDER.length; i++) {
+    const n    = PH_ORDER[i];
+    const sOut = hl ? hl.spans[n] : null;
+    const arc  = arcs2[n];
+    if (!sOut || !arc) continue;
+    if (firstMove2) {
+      ctx2d.moveTo(tx(arc.cx + arc.r * Math.cos(arc.startAngle)),
+                   ty(arc.cy + arc.r * Math.sin(arc.startAngle)));
+      firstMove2 = false;
     }
+    ctx2d.arc(tx(arc.cx), ty(arc.cy), arc.r * sc,
+              arc.startAngle, arc.endAngle, arc.ccw);
+    ctx2d.lineTo(tx(sOut.t2.x), ty(sOut.t2.y));
   }
+  ctx2d.closePath();
+  ctx2d.stroke();
   ctx2d.restore();
 
   // Pulleys
@@ -1086,6 +1115,82 @@ function downloadExcel() {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+// ── Canvas 2D Interactivity — Hover + Drag to Move ───────────────────────────
+function initCanvasInteraction() {
+  if (!cvs) return;
+  const DRAGGABLE = new Set(['FAN','IDR','ALT','AC','TEN']);
+  let dragTarget = null, dragOffX = 0, dragOffY = 0;
+
+  function worldCoords(e) {
+    const rect = cvs.getBoundingClientRect();
+    const px = (e.clientX - rect.left) * (cvs.width  / rect.width);
+    const py = (e.clientY - rect.top)  * (cvs.height / rect.height);
+    const { PAD, sc, minX, minY, H } = _2dTransform;
+    return { x: (px - PAD) / sc + minX, y: -(py - (H - PAD)) / sc + minY };
+  }
+
+  function hitTest(wx, wy) {
+    for (const n of PH_ORDER) {
+      const p = ST.pulleys[n];
+      if (Math.hypot(wx - p.x, wy - p.y) <= p.r * 1.6) return n;
+    }
+    return null;
+  }
+
+  cvs.addEventListener('mousedown', (e) => {
+    const { x, y } = worldCoords(e);
+    const hit = hitTest(x, y);
+    if (hit && DRAGGABLE.has(hit)) {
+      dragTarget = hit;
+      dragOffX = x - ST.pulleys[hit].x;
+      dragOffY = y - ST.pulleys[hit].y;
+      cvs.style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+  });
+
+  cvs.addEventListener('mousemove', (e) => {
+    const { x, y } = worldCoords(e);
+    if (dragTarget) {
+      ST.pulleys[dragTarget].x = x - dragOffX;
+      ST.pulleys[dragTarget].y = y - dragOffY;
+      compute(); return;
+    }
+    hoverTarget = hitTest(x, y);
+    cvs.style.cursor = hoverTarget ? (DRAGGABLE.has(hoverTarget) ? 'grab' : 'pointer') : 'crosshair';
+  });
+
+  function stopDrag() {
+    if (dragTarget) { dragTarget = null; cvs.style.cursor = 'crosshair'; }
+  }
+  cvs.addEventListener('mouseup', stopDrag);
+  cvs.addEventListener('mouseleave', () => { stopDrag(); hoverTarget = null; });
+
+  // Touch
+  cvs.addEventListener('touchstart', (e) => {
+    const t = e.touches[0];
+    const me = { clientX: t.clientX, clientY: t.clientY };
+    const { x, y } = worldCoords(me);
+    const hit = hitTest(x, y);
+    if (hit && DRAGGABLE.has(hit)) {
+      dragTarget = hit; dragOffX = x - ST.pulleys[hit].x; dragOffY = y - ST.pulleys[hit].y;
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  cvs.addEventListener('touchmove', (e) => {
+    if (!dragTarget) return;
+    const t = e.touches[0];
+    const me = { clientX: t.clientX, clientY: t.clientY };
+    const { x, y } = worldCoords(me);
+    ST.pulleys[dragTarget].x = x - dragOffX;
+    ST.pulleys[dragTarget].y = y - dragOffY;
+    compute(); e.preventDefault();
+  }, { passive: false });
+
+  cvs.addEventListener('touchend', stopDrag);
+}
+
 window.addEventListener('load', () => {
   // Deep copy pulley defaults for mutable state
   ST.pulleys = JSON.parse(JSON.stringify(PULLEY_DEFAULTS));
@@ -1109,4 +1214,5 @@ window.addEventListener('load', () => {
 
   // Start canvas animation loop
   loop2D();
+  initCanvasInteraction();
 });
