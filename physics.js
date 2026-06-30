@@ -1,4 +1,4 @@
-/* physics.js – Gates FEAD Advanced Engineering Suite – Calculation Engine */
+﻿/* physics.js – FEAD Advanced Engineering Suite – Calculation Engine */
 'use strict';
 
 // ── Belt Material Constants ───────────────────────────────────────────────────
@@ -12,7 +12,7 @@ const BELT = {
   wohlerTref: 1200    // N — reference tension for Wöhler
 };
 
-// ── Pulley Datum Values (Gates PDF) ──────────────────────────────────────────
+// ── Pulley Datum Values (Reference PDF) ──────────────────────────────────────────
 const PULLEY_DEFAULTS = {
   CRK:{ x:0,       y:0,     r:79.57,  eff:159.13, sr:1.000, cw:true,  color:'#f59e0b', label:'CRK\nCrankshaft' },
   FAN:{ x:6,       y:213.5, r:60.495, eff:121.98, sr:1.302, cw:true,  color:'#8b5cf6', label:'FAN\nFan' },

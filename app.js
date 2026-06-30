@@ -1,4 +1,4 @@
-/* app.js – Gates FEAD Advanced Engineering Suite – UI Engine */
+﻿/* app.js – FEAD Advanced Engineering Suite – UI Engine */
 'use strict';
 
 // ── Global State ──────────────────────────────────────────────────────────────
@@ -851,9 +851,9 @@ async function downloadPDF() {
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
     const W = 210, M = 14;
-    const title = document.getElementById('report-title')?.value || 'Gates FEAD Engineering Analysis';
+    const title = document.getElementById('report-title')?.value || 'FEAD Engineering Analysis';
     const author = document.getElementById('report-author')?.value || 'Engineer';
-    const project = document.getElementById('report-project')?.value || 'Ashok Leyland H6';
+    const project = document.getElementById('report-project')?.value || 'H6 OEM Engine';
     const date = new Date().toLocaleDateString('en-GB');
 
     // ── Header ──
@@ -1025,7 +1025,7 @@ async function downloadPDF() {
     for (let i=1;i<=pgCount;i++) {
       pdf.setPage(i);
       pdf.setTextColor(71,85,105); pdf.setFontSize(7);
-      pdf.text(`Gates FEAD Advanced Engineering Suite · Page ${i}/${pgCount}`, M, 292);
+      pdf.text(`FEAD Advanced Engineering Suite · Page ${i}/${pgCount}`, M, 292);
     }
 
     const safeName = title.replace(/[^a-z0-9]/gi,'_').toLowerCase();
@@ -1082,7 +1082,7 @@ function downloadExcel() {
     PH_ORDER.forEach(n=>{const d=fr.frictResult[n];rows.push([n,+d.T_noac.toFixed(1),+d.T_ac.toFixed(1),+d.delta_T.toFixed(1),+d.delta_F_hub.toFixed(1),+(d.delta_P_friction*1000).toFixed(1)]);});
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Frictional Power');
   }
-  XLSX.writeFile(wb, `gates_fead_advanced_${ST.rpm}rpm.xlsx`);
+  XLSX.writeFile(wb, `Reference_fead_advanced_${ST.rpm}rpm.xlsx`);
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
