@@ -175,7 +175,7 @@ function draw2D() {
     ctx2d.beginPath(); ctx2d.moveTo(PAD/2, ty(gy)); ctx2d.lineTo(W-PAD/2, ty(gy)); ctx2d.stroke();
   }
 
-  // ── Belt path — straight lines through pulley centres ─────────
+  // ── Belt path — tangent lines + boundary arcs along every pulley ─────────
   const hl = RESULTS.hubLoad;
   const avgF = hl ? Object.values(hl.results).reduce((s,d)=>s+d.F,0)/6 : 0;
   const bw = Math.max(2, Math.min(6, 2 + avgF/900));
@@ -185,14 +185,45 @@ function draw2D() {
   ctx2d.strokeStyle = '#f59e0b'; ctx2d.lineWidth = bw;
   ctx2d.setLineDash([13,8]); ctx2d.lineDashOffset = dashOffset;
 
-  ctx2d.beginPath();
-  for (let i = 0; i < PH_ORDER.length; i++) {
-    const p = ST.pulleys[PH_ORDER[i]];
-    if (i === 0) ctx2d.moveTo(tx(p.x), ty(p.y));
-    else ctx2d.lineTo(tx(p.x), ty(p.y));
+  if (hl) {
+    ctx2d.beginPath();
+    let started2 = false;
+
+    for (let i = 0; i < PH_ORDER.length; i++) {
+      const n    = PH_ORDER[i];
+      const prev = PH_ORDER[(i - 1 + PH_ORDER.length) % PH_ORDER.length];
+      const p    = ST.pulleys[n];
+      const sIn  = hl.spans[prev];
+      const sOut = hl.spans[n];
+      if (!sIn || !sOut) continue;
+
+      const aIn  = Math.atan2(sIn.t2.y  - p.y, sIn.t2.x  - p.x);
+      const aOut = Math.atan2(sOut.t1.y - p.y, sOut.t1.x - p.x);
+
+      // Serpentine belt wrap is always < 180° — always take the shorter arc
+      let sweepCCW2 = aOut - aIn;
+      if (sweepCCW2 < 0) sweepCCW2 += 2 * Math.PI;
+      const goCCW = sweepCCW2 <= Math.PI;
+
+      const SEGS = 16;
+      let sweep = goCCW ? sweepCCW2 : (2 * Math.PI - sweepCCW2);
+
+      if (!started2) {
+        ctx2d.moveTo(tx(p.x + p.r * Math.cos(aIn)), ty(p.y + p.r * Math.sin(aIn)));
+        started2 = true;
+      }
+
+      for (let s = 1; s <= SEGS; s++) {
+        const frac = s / SEGS;
+        const a = goCCW ? (aIn + sweep * frac) : (aIn - sweep * frac);
+        ctx2d.lineTo(tx(p.x + p.r * Math.cos(a)), ty(p.y + p.r * Math.sin(a)));
+      }
+
+      ctx2d.lineTo(tx(sOut.t2.x), ty(sOut.t2.y));
+    }
+    ctx2d.closePath();
+    ctx2d.stroke();
   }
-  ctx2d.closePath();
-  ctx2d.stroke();
   ctx2d.restore();
 
   // Pulleys
